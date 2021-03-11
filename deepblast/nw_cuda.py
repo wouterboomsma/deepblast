@@ -56,9 +56,9 @@ def _forward_pass_device(theta, A, Q):
 
     for i in range(1, N + 1):
         for j in range(1, M + 1):
-            maxargs[0] = A[last, j - 1] + V[last, j]  # x
+            maxargs[0] = A[0, last, j - 1] + V[last, j]  # x
             maxargs[1] = V[last, j - 1]  # m
-            maxargs[2] = A[last, j - 1] + V[curr, j - 1]  # y
+            maxargs[2] = A[1, last, j - 1] + V[curr, j - 1]  # y
 
             v = _soft_max_device(maxargs, Q[i, j])
             V[curr, j] = theta[i - 1, j - 1] + v
