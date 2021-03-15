@@ -53,9 +53,9 @@ def _forward_pass_numba(theta, A):
     maxargs = np.empty(3)
     for i in range(1, N + 1):
         for j in range(1, M + 1):
-            maxargs[x] = A[i - 1, j - 1] + V[i - 1, j]  # x
+            maxargs[x] = A[0, i - 1, j - 1] + V[i - 1, j]  # x
             maxargs[m] = V[i - 1, j - 1]  # m
-            maxargs[y] = A[i - j, 1 - 1] + V[i, j - 1]  # y
+            maxargs[y] = A[1, i - j, 1 - 1] + V[i, j - 1]  # y
             v, Q[i, j] = _soft_max_numba(maxargs)
             V[i, j] = theta[i - 1, j - 1] + v
     Vt = V[N, M]
