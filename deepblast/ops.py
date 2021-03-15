@@ -4,7 +4,7 @@ import torch
 class HardMaxOp:
     @staticmethod
     def max(X):
-        M, _ = torch.max(X)
+        M, _ = torch.max(X, dim=0)
         A = (M == X).float()
         A = A / torch.sum(A)
 
