@@ -92,9 +92,9 @@ def _forward_pass(theta, A, operator='softmax'):
         for i in range(1, N + 1):
             for j in range(1, M + 1):
                 tmp = torch.Tensor([
-                    A[i - 1, j - 1] + V[i - 1, j],
+                    A[0, i - 1, j - 1] + V[i - 1, j],
                     V[i - 1, j - 1],
-                    A[i - 1, j - 1] + V[i, j - 1]
+                    A[0, i - 1, j - 1] + V[i, j - 1]
                 ])
                 v, Q[i, j] = operator.max(tmp)
                 V[i, j] = theta[i - 1, j - 1] + v
