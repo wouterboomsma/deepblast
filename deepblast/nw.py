@@ -107,6 +107,7 @@ def _forward_pass(theta, A, operator='softmax'):
         Vt = torch.tensor(Vt, dtype=theta.dtype)
         Q = torch.from_numpy(Q)
 
+    print(V)
     return Vt, Q
 
 
