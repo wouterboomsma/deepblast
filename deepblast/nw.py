@@ -48,16 +48,26 @@ def _forward_pass_numba(theta, A):
     N, M = theta.shape
     V = np.zeros((N + 1, M + 1))     # N x M
     Q = np.zeros((N + 2, M + 2, 3))  # N x M x S
+    for i in range(1, N+1):
+        V[i, 0] = V[i-1,0] + A[1, i-1, 0]
+    for j in range(1, M+1):
+        V[0, j] = V[0,j-1] + A[0, 0, j-1]
     Q[N + 1, M + 1] = 1
     m, x, y = 1, 0, 2
     maxargs = np.empty(3)
     for i in range(1, N + 1):
         for j in range(1, M + 1):
             maxargs[x] = A[0, i - 1, j - 1] + V[i - 1, j]  # x
-            maxargs[m] = V[i - 1, j - 1]  # m
+            maxargs[m] = theta[i - 1, j - 1] + V[i - 1, j - 1]  # m
             maxargs[y] = A[1, i - j, 1 - 1] + V[i, j - 1]  # y
-            v, Q[i, j] = _soft_max_numba(maxargs)
-            V[i, j] = theta[i - 1, j - 1] + v
+            V[i, j], Q[i, j] = _soft_max_numba(maxargs)
+            # V[i, j] = theta[i - 1, j - 1] + v
+            # print("? ", A[0, i - 1, j - 1], V[i - 1, j])
+            # print("? ", V[i - 1, j - 1])
+            # print("? ", A[0, i - 1, j - 1] + V[i, j - 1])
+            # print("Q ", i, j, maxargs, _soft_max_numba(maxargs)[1])
+    # print(V)
+            
     Vt = V[N, M]
     return Vt, Q
 
@@ -88,18 +98,27 @@ def _forward_pass(theta, A, operator='softmax'):
         N, M = theta.size()
         V = new(N + 1, M + 1).zero_()     # N x M
         Q = new(N + 2, M + 2, 3).zero_()  # N x M x S
+        for i in range(1, N+1):
+            V[i, 0] = V[i-1,0] + A[1, i-1,0]
+        for j in range(1, M+1):
+            V[0, j] = V[0,j-1] + A[0, 0,j-1]
         Q[N + 1, M + 1] = 1
         for i in range(1, N + 1):
             for j in range(1, M + 1):
                 tmp = torch.Tensor([
                     A[0, i - 1, j - 1] + V[i - 1, j],
-                    V[i - 1, j - 1],
-                    A[0, i - 1, j - 1] + V[i, j - 1]
+                    theta[i - 1, j - 1] + V[i - 1, j - 1],
+                    A[0, i - 1, j - 1] + V[i,     j - 1]
                 ])
-                v, Q[i, j] = operator.max(tmp)
-                V[i, j] = theta[i - 1, j - 1] + v
+                V[i,j], Q[i, j] = operator.max(tmp)
+                # print("? ", A[0, i - 1, j - 1], V[i - 1, j])
+                # print("? ", V[i - 1, j - 1])
+                # print("? ", A[0, i - 1, j - 1] + V[i, j - 1])
+                # print("Q ", i, j, tmp, operator.max(tmp)[1])
+                # V[i, j] = theta[i - 1, j - 1] + v
 
         Vt = V[N, M]
+        # print(V)
     else:
         Vt, Q = _forward_pass_numba(
             theta.detach().cpu().numpy(),
@@ -107,7 +126,6 @@ def _forward_pass(theta, A, operator='softmax'):
         Vt = torch.tensor(Vt, dtype=theta.dtype)
         Q = torch.from_numpy(Q)
 
-    print(V)
     return Vt, Q
 
 
@@ -391,7 +409,8 @@ class NeedlemanWunschDecoder(nn.Module):
         N, M = grad.shape
         states = torch.zeros(max(N, M))
         i, j = N - 1, M - 1
-        states = [(i, j, m)]
+        # states = [(i, j, m)]
+        states = []
         max_ = -100000
         while True:
             idx = torch.Tensor([[i - 1, j], [i - 1, j - 1], [i, j - 1]]).long()
@@ -402,20 +421,25 @@ class NeedlemanWunschDecoder(nn.Module):
                 break
             ij = torch.argmax(torch.Tensor([left, diag, upper]))
             xmy = torch.Tensor([x, m, y])
-            i, j = int(idx[ij][0]), int(idx[ij][1])
             s = int(xmy[ij])
             states.append((i, j, s))
+            i, j = int(idx[ij][0]), int(idx[ij][1])
+            # print(left, diag, upper)
+            # print(states)
 
-        # take care of any outstanding gaps
-        while i > 0:
-            i = i - 1
-            s = x
-            states.append((i, j, s))
+        states.append((0,0, grad[0,0].long().item()))
+        # print(states)
+            
+        # # take care of any outstanding gaps
+        # while i > 0:
+        #     i = i - 1
+        #     s = x
+        #     states.append((i, j, s))
 
-        while j > 0:
-            j = j - 1
-            s = y
-            states.append((i, j, s))
+        # while j > 0:
+        #     j = j - 1
+        #     s = y
+        #     states.append((i, j, s))
 
         return states[::-1]
 
