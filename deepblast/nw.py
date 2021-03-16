@@ -118,7 +118,7 @@ def _forward_pass(theta, A, operator='softmax'):
                 # V[i, j] = theta[i - 1, j - 1] + v
 
         Vt = V[N, M]
-        # print(V)
+        print("!!", V)
     else:
         Vt, Q = _forward_pass_numba(
             theta.detach().cpu().numpy(),
